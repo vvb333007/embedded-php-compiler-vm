@@ -5043,7 +5043,7 @@ PH7_PRIVATE sxi32 PH7_VmThrowError(
 {
   SyBlob *pWorker = &pVm->sWorker;
   SyString *pFile;
-  char *zErr;
+  const char *zErr;
   sxi32 rc;
   if( !pVm->bErrReport ){
     /* Don't bother reporting errors */
@@ -5092,7 +5092,7 @@ static sxi32 VmThrowErrorAp(
 {
   SyBlob *pWorker = &pVm->sWorker;
   SyString *pFile;
-  char *zErr;
+  const char *zErr;
   sxi32 rc;
   if( !pVm->bErrReport ){
     /* Don't bother reporting errors */
@@ -19998,12 +19998,11 @@ static int PH7_vfs_getmygid(ph7_context *pCtx,int nArg,ph7_value **apArg)
 #  else
 struct utsname {
 
-  char *sysname;
-  char *nodename;
-  char *release;
-  char *version;
-  char *machine;
-
+  const char *sysname;
+  const char *nodename;
+  const char *release;
+  const char *version;
+  const char *machine;
 };
 
 static int uname(struct utsname *out) {
@@ -22123,7 +22122,7 @@ static int PH7_builtin_fputcsv(ph7_context *pCtx,int nArg,ph7_value **apArg)
   const ph7_io_stream *pStream;
   struct csv_data sCsv;
   io_private *pDev;
-  char *zEol;
+  const char *zEol;
   int eolen;
   if( nArg < 2 || !ph7_value_is_resource(apArg[0]) || !ph7_value_is_array(apArg[1]) ){
     /* Missing/Invalid arguments,return FALSE */
@@ -25392,6 +25391,11 @@ static int UnixFile_Seek(void *pUserData,ph7_int64 iOfft,int whence)
 /* int (*xLock)(void *,int) */
 static int UnixFile_Lock(void *pUserData,int lock_type)
 {
+#ifdef ESP32
+  // XXX: implement flock() on esp32 
+  return PH7_OK;
+  //return -1;
+#else
   int fd = SX_PTR_TO_INT(pUserData);
   int rc = PH7_OK; /* cc warning */
   if( lock_type < 0 ){
@@ -25407,6 +25411,7 @@ static int UnixFile_Lock(void *pUserData,int lock_type)
     }
   }
   return !rc ? PH7_OK : -1;
+#endif
 }
 /* ph7_int64 (*xTell)(void *) */
 static ph7_int64 UnixFile_Tell(void *pUserData)
@@ -32681,8 +32686,8 @@ struct SyFmtInfo
   sxu8 base;     /* The base for radix conversion */
   int flags;    /* One or more of SXFLAG_ constants below */
   sxu8 type;     /* Conversion paradigm */
-  char *charset; /* The character set for conversion */
-  char *prefix;  /* Prefix on non-zero values in alt format */
+  const char *charset; /* The character set for conversion */
+  const char *prefix;  /* Prefix on non-zero values in alt format */
 };
 typedef struct SyFmtConsumer SyFmtConsumer;
 struct SyFmtConsumer
@@ -32946,7 +32951,7 @@ static const SyFmtInfo aFmt[] = {
         }
         bufpt = &buf[SXFMT_BUFSIZ-1];
         {
-          register char *cset;      /* Use registers for speed */
+          const char *cset;      /* Use registers for speed */
           register int base;
           cset = infop->charset;
           base = infop->base;
@@ -32961,7 +32966,8 @@ static const SyFmtInfo aFmt[] = {
         }
         if( prefix ) *(--bufpt) = prefix;               /* Add sign */
         if( flag_alternateform && infop->prefix ){      /* Add "0" or "0x" */
-          char *pre, x;
+          char const *pre;
+          char x;
           pre = infop->prefix;
           if( *bufpt!=pre[0] ){
             for(pre=infop->prefix; (x=(*pre))!=0; pre++) *(--bufpt) = x;
@@ -33002,7 +33008,7 @@ static const SyFmtInfo aFmt[] = {
           while( realvalue<1e-8 && exp>=-350 ){ realvalue *= 1e8; exp-=8; }
           while( realvalue<1.0 && exp>=-350 ){ realvalue *= 10.0; exp--; }
           if( exp>350 || exp<-350 ){
-            bufpt = "NaN";
+            bufpt = "NaN"; // discard const but do not write
             length = 3;
             break;
           }
@@ -33123,7 +33129,7 @@ static const SyFmtInfo aFmt[] = {
       case SXFMT_STRING:
         bufpt = va_arg(ap,char*);
         if( bufpt==0 ){
-          bufpt = " ";
+          bufpt = " "; // discard const but do not write
       length = (int)sizeof(" ")-1;
       break;
         }
@@ -33138,7 +33144,7 @@ static const SyFmtInfo aFmt[] = {
     /* Symisc extension */
     SyString *pStr = va_arg(ap,SyString *);
     if( pStr == 0 || pStr->zString == 0 ){
-       bufpt = " ";
+       bufpt = " "; // discard const but do not write
          length = (int)sizeof(char);
          break;
     }
@@ -55081,8 +55087,8 @@ struct ph7_fmt_info
   sxu8 base;     /* The base for radix conversion */
   int flags;    /* One or more of PH7_FMT_FLAG_ constants below */
   sxu8 type;     /* Conversion paradigm */
-  char *charset; /* The character set for conversion */
-  char *prefix;  /* Prefix on non-zero values in alt format */
+  const char *charset; /* The character set for conversion */
+  const char *prefix;  /* Prefix on non-zero values in alt format */
 };
 #ifndef PH7_OMIT_FLOATING_POINT
 /*
@@ -55386,7 +55392,7 @@ PH7_PRIVATE sxi32 PH7_InputFormat(
         }
         zBuf = &zWorker[PH7_FMT_BUFSIZ-1];
         {
-          register char *cset;      /* Use registers for speed */
+          const char *cset;      /* Use registers for speed */
           register int base;
           cset = pInfo->charset;
           base = pInfo->base;
@@ -55401,7 +55407,8 @@ PH7_PRIVATE sxi32 PH7_InputFormat(
         }
         if( prefix ) *(--zBuf) = (char)prefix;               /* Add sign */
         if( flag_alternateform && pInfo->prefix ){      /* Add "0" or "0x" */
-          char *pre, x;
+          char const *pre;
+          char x;
           pre = pInfo->prefix;
           if( *zBuf!=pre[0] ){
             for(pre=pInfo->prefix; (x=(*pre))!=0; pre++) *(--zBuf) = x;
