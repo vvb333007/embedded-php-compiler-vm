@@ -41,26 +41,11 @@ static int Output_Consumer(const void *pOutput,unsigned int nOutputLen,void *pUs
  * Main program: Compile and execute the PHP file. 
  */
 const char *prog = "\r\n"
-"<?function assert_failure()\r\n"
-"{\r\n"
-"    echo 'Assert failed..Exiting'.PHP_EOL;\r\n"
-"}\r\n"
-"\r\n"
-"function test_assert($parameter)\r\n"
-"{\r\n"
-"    assert(is_bool($parameter));\r\n"
-"}\r\n"
-"\r\n"
-"assert_options(ASSERT_ACTIVE,   true);\r\n"
-"assert_options(ASSERT_BAIL,     true);\r\n"
-"assert_options(ASSERT_WARNING,  false);\r\n"
-"assert_options(ASSERT_CALLBACK, 'assert_failure');\r\n"
-"\r\n"
-"test_assert(1);\r\n"
-"\r\n"
-"echo 'Never reached';\r\n"
-"?>";
-
+"<?php\r\n"
+" echo 'Welcome guest'.PHP_EOL;\r\n"
+" echo 'Current system time is: '.date('Y-m-d H:i:s').PHP_EOL;\r\n"
+" echo 'and you are running '.php_uname();\r\n"
+"?>\r\n";
 
 
 int engine_test() {
